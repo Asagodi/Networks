@@ -1,8 +1,12 @@
 import numpy as np
-import networkx
+import networkx as nx
 import matplotlib.pyplot as plt
+import random
+%matplotlib inline  
 
-import graphs
-
-G = create_erdos(3, 0.5)
+G = create_erdos(10, 0.2)
 print G.matrix
+
+TG = nx.DiGraph(G.matrix)
+
+draw(TG, pos=nx.spring_layout(TG))
