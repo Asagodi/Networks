@@ -1,7 +1,7 @@
 import numpy
 import math
 
-class Node(Object):
+class Node:
   """ 
   Useful for the opinion network.
   """
