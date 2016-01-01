@@ -1,4 +1,5 @@
 import numpy
+import math
 
 class Node(Object):
   """ 
@@ -26,5 +27,10 @@ class Graph(Object):
 #Creating different graphs
 def create_erdos(n = 1, p = 1.):
   # n Number of Nodes, p Choice to get edge
-  
-  for 
+  matrix = np.zeros((n, n))
+  for i in range(n):
+    for j in range(n):
+      if math.random < p:
+        matrix(i, j) = 1
+        
+  return Graph(matrix = matrix)
