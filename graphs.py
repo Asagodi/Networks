@@ -11,7 +11,7 @@ class Node(Object):
 
 
 #Create three possibilities to represent graph?
-class Graph(Object):
+class Graph:
   def __init__(self, matrix = None, nnodes = 1):
     if matrix != None:
       self.matrix = matrix
