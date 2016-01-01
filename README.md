@@ -1,2 +1,3 @@
 # Networks
 
+cd /c "C:\"
