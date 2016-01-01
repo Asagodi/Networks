@@ -31,6 +31,6 @@ def create_erdos(n = 1, p = 1.):
   for i in range(n):
     for j in range(n):
       if math.random < p:
-        matrix(i, j) = 1
+        matrix([i, j]) = 1
         
   return Graph(matrix = matrix)
