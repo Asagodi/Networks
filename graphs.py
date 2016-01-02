@@ -1,18 +1,3 @@
-import numpy
-import math
-import random
-import copy
-
-
-class Node:
-    """ 
-    Useful for the opinion network.
-    """
-    def __init__(self, value = 0):
-        value = value
-
-
-
 #Create three possibilities to represent graph?
 #TODO: create possibility to give nodes names? or just number-name dict?
 class Graph(object):
@@ -25,6 +10,7 @@ class Graph(object):
             self.matrix = matrix
             self.nnodes = matrix.shape[0]
             self.matrix_to_edgelist()
+            self.nodedict = self.matrix_to_nodedict()
         elif nodes == []:
             self.edges = edges
             self.nnodes = nnodes
@@ -33,6 +19,7 @@ class Graph(object):
             self.edgedict = dict(zip(self.edges, edgevalues))
             self.matrix = np.zeros((nnodes,nnodes))
             self.edgelist_to_matrix()
+            self.nodedict = self.matrix_to_nodedict()
         if nodedict != {}:
             0
             
@@ -47,11 +34,12 @@ class Graph(object):
         self.edges =  zip(ind[0], ind[1])
         
     def matrix_to_nodedict(self):
-        self.nodedict = {}
+        nodedict = {}
         for i in range(self.nnodes):
             ind = np.nonzero(self.matrix[i,:])[0].tolist()
             ind.extend(np.nonzero(self.matrix[:,i])[0].tolist())
-            self.nodedict[i] = ind
+            nodedict[i] = ind
+        return nodedict
         
         
     def add_edge(self):
@@ -99,4 +87,11 @@ class Graph(object):
         
     def diameter(self):
         """ calculates the diameter of the graph """
-        0
+        pairs = [ (i,j) for i in range(self.nnodes-1) for j in range(i+1, self.nnodes)]
+        shortest_paths = []
+        for (start,end) in pairs:
+            paths = self.find_all_paths(start,end)
+            shortest = sorted(paths, key=len)[0]
+            shortest_paths.append(shortest)
+        diameter = len(shortest_paths[-1])
+        return diameter
