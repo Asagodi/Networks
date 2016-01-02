@@ -16,6 +16,7 @@ class Graph(object):
             self.nnodes = matrix.shape[0]
             self.matrix_to_edgelist()
             self.nodedict = self.matrix_to_nodedict()
+            self.nodes = range(nnodes)
         elif nodes == []:
             self.edges = edges
             self.nnodes = nnodes
@@ -25,6 +26,7 @@ class Graph(object):
             self.matrix = np.zeros((nnodes,nnodes))
             self.edgelist_to_matrix()
             self.nodedict = self.matrix_to_nodedict()
+            self.nodes = range(nnodes)
         if nodedict != {}:
             0
             
@@ -54,7 +56,8 @@ class Graph(object):
         0
         
     def find_path(self, start, end, path=[]):
-        #assert
+        assert start in self.nodes, "Start is not a node in the graph"
+        assert end in self.nodes, "End is not a node in the graph"
         path = path + [start]
         if start == end:
             return path
@@ -100,6 +103,7 @@ class Graph(object):
             shortest_paths.append(shortest)
         diameter = len(shortest_paths[-1])
         return diameter
+  
 
 #Creating different graphs
 def create_erdos(n = 1, p = 1.):
@@ -110,7 +114,7 @@ def create_erdos(n = 1, p = 1.):
     #set diagonal and lower triangular entries to zero
     matrix = np.triu(matrix, 1)
             
-    return Graph(matrix = matrix)
+    return Graph(matrix = matrix, nnodes = n)
 
 def create_watts(n = 1, p = 0.1):
     #create list of edges
@@ -157,6 +161,6 @@ def create_barabasi(n, n_0):
         probs = list(matrix.sum(axis=1)+matrix.sum(axis=0))
         probs.pop(new)
         probs = probs/sum(probs)
-        ind = np.random.choice(nodes, size=n_0, replace=False, p=probs)
+        ind = numpy.random.choice(nodes, size=n_0, replace=False, p=probs)
         matrix[ind, new] = 1
     return Graph(matrix = matrix)
