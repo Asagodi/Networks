@@ -1,3 +1,8 @@
+import numpy as np
+import math
+import random
+import copy
+
 #Create three possibilities to represent graph?
 #TODO: create possibility to give nodes names? or just number-name dict?
 class Graph(object):
