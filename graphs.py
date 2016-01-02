@@ -101,12 +101,6 @@ class Graph(object):
         diameter = len(shortest_paths[-1])
         return diameter
 
-
-import numpy as np
-import math
-import random
-import copy
-
 #Creating different graphs
 def create_erdos(n = 1, p = 1.):
     # n Number of Nodes, p Choice to get edge
@@ -163,6 +157,6 @@ def create_barabasi(n, n_0):
         probs = list(matrix.sum(axis=1)+matrix.sum(axis=0))
         probs.pop(new)
         probs = probs/sum(probs)
-        ind = numpy.random.choice(nodes, size=n_0, replace=False, p=probs)
+        ind = np.random.choice(nodes, size=n_0, replace=False, p=probs)
         matrix[ind, new] = 1
     return Graph(matrix = matrix)
