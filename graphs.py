@@ -40,11 +40,11 @@ class Graph:
 #Creating different graphs
 def create_erdos(n = 1, p = 1.):
     # n Number of Nodes, p Choice to get edge
+    # only upper triangular entries
     matrix = np.random.rand(n,n) < p
                     
-    #set diagonal to zero
-    for d in range(n):
-        matrix[d, d] = 0
+    #set diagonal and lower triangular entries to zero
+    matrix = np.triu(matrix, 1)
             
     return Graph(matrix = matrix)
 
@@ -54,17 +54,24 @@ def create_watts(n = 1, p = 0.1):
     init_edge_list = []
     for i in range(n-1):
         init_edge_list.append((i,i+1))
-    for i in range(1, n):
-        init_edge_list.append((i,i-1))
+    init_edge_list.append((0,n-1))
+    #G = Graph(nnodes = n, edges = init_edge_list)
+    #TG = nx.Graph(G.matrix)
+    #draw(TG, pos=nx.spring_layout(TG))
     
     new_edge_list = []
     elist = copy.deepcopy(init_edge_list)
     for edge in init_edge_list:
         if random.random() < p:
             new_edge = edge
-            while new_edge in elist or new_edge in new_edge_list:
+            #create new edge until a non-existent is found
+            while new_edge in elist or new_edge in new_edge_list or new_edge == (edge[0], edge[0])\
+            or (new_edge[1], new_edge[0]) in elist or (new_edge[1], new_edge[0]) in new_edge_list:
                 new_edge = (edge[0], random.randint(0, n-1))
             elist.remove(edge)
+            #set edges (small number, great number)
+            if new_edge[0] > new_edge[1]:
+                new_edge = (new_edge[1], new_edge[0])
             new_edge_list.append(new_edge)
         else:
             new_edge_list.append(edge)
