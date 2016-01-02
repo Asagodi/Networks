@@ -99,8 +99,11 @@ class Graph(object):
         shortest_paths = []
         for (start,end) in pairs:
             paths = self.find_all_paths(start,end)
-            shortest = sorted(paths, key=len)[0]
-            shortest_paths.append(shortest)
+            try:
+                shortest = sorted(paths, key=len)[0]
+                shortest_paths.append(shortest)
+            except:
+                0
         diameter = len(shortest_paths[-1])
         return diameter
   
@@ -149,7 +152,7 @@ def create_watts(n = 1, p = 0.1):
     
     
 def create_barabasi(n, n_0):
-    assert n_0 + 1 < n, "%n should be greater than n_0+1"
+    assert n_0 + 1 < n, "%n should be smaller than n_0+2"
     matrix = np.zeros((n,n))
     #connect first node to 2,3...,n_0+1
     matrix[0,1:n_0+1] = 1
@@ -161,6 +164,6 @@ def create_barabasi(n, n_0):
         probs = list(matrix.sum(axis=1)+matrix.sum(axis=0))
         probs.pop(new)
         probs = probs/sum(probs)
-        ind = numpy.random.choice(nodes, size=n_0, replace=False, p=probs)
+        ind = np.random.choice(nodes, size=n_0, replace=False, p=probs)
         matrix[ind, new] = 1
     return Graph(matrix = matrix)
