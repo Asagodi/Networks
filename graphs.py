@@ -71,3 +71,24 @@ def create_watts(n = 1, p = 0.1):
             
     return  Graph(nnodes = n, edges = new_edge_list)
     
+    
+    
+def create_barabasi(n, n_0):
+    matrix = np.zeros((n,n))
+    #connect first node to n_0 others
+    matrix[0,1:n_0+1] = 1
+    #connect second to n_0 others (still not important which)
+    matrix[1, 0] = 1
+    print matrix
+    for new in range(2, n):
+        print new
+        nodes = range(n)
+        nodes.remove(new)
+        print nodes
+        probs = list(matrix.sum(axis=1))
+        probs.pop(new)
+        probs = probs/sum(probs)
+        print probs
+        ind = numpy.random.choice(nodes, size=n_0, replace=False, p=probs)
+        matrix[new, ind] = 1
+    print matrix
