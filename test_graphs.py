@@ -1,8 +1,6 @@
 import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
-import graphs
-import types
 %matplotlib inline  
 
 #G = create_erdos(0, 0.5)
@@ -13,7 +11,7 @@ import types
 #TG = nx.Graph(G.matrix)
 #draw(TG, pos=nx.spring_layout(TG))
 
-G = create_barabasi(10, 2)
+G = create_barabasi(20, 1)
 TG = nx.Graph(G.matrix)
 draw(TG, pos=nx.spring_layout(TG))
 
@@ -21,4 +19,4 @@ G.matrix_to_nodedict()
 G.find_path(0,10)
 G.find_all_paths(5,4)
 G.find_shortest_path(3,7)
-
+print G.diameter()
