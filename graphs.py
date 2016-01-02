@@ -103,7 +103,7 @@ class Graph(object):
                 shortest = sorted(paths, key=len)[0]
                 shortest_paths.append(shortest)
             except:
-                0
+                return "Infinity"
         diameter = len(shortest_paths[-1])
         return diameter
   
