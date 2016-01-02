@@ -33,6 +33,11 @@ class Graph:
         self.matrix = np.zeros((self.nnodes,self.nnodes))
         for edge in self.edges:
             self.matrix[edge[0], edge[1]] = 1
+            
+    def matrix_to_edgelist(self):
+        ind = np.nonzero(self.matrix)
+        self.edges =  zip(ind[0], ind[1])
+        
         
   
   
@@ -81,21 +86,18 @@ def create_watts(n = 1, p = 0.1):
     
     
 def create_barabasi(n, n_0):
+    assert n_0 + 1 < n, "%n should be greater than n_0+1"
     matrix = np.zeros((n,n))
-    #connect first node to n_0 others
+    #connect first node to 2,3...,n_0+1
     matrix[0,1:n_0+1] = 1
-    #connect second to n_0 others (still not important which)
-    matrix[1, 0] = 1
-    print matrix
-    for new in range(2, n):
-        print new
+    #connect (n_0+2)th to 2,3...,n_0+1  (still not important which)
+    matrix[1:n_0+1, n_0+1] = 1
+    for new in range(n_0+2, n):
         nodes = range(n)
         nodes.remove(new)
-        print nodes
-        probs = list(matrix.sum(axis=1))
+        probs = list(matrix.sum(axis=1)+matrix.sum(axis=0))
         probs.pop(new)
         probs = probs/sum(probs)
-        print probs
         ind = numpy.random.choice(nodes, size=n_0, replace=False, p=probs)
-        matrix[new, ind] = 1
-    print matrix
+        matrix[ind, new] = 1
+    return Graph(matrix = matrix)
