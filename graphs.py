@@ -16,7 +16,7 @@ class Graph(object):
     """
     def __init__(self, matrix = [], nnodes = 1, nodes = [], \
                  edges = [], nodevalues = [], edgevalues = [],\
-                 nodedict = {}, directed = False):
+                 nodedict = {}, directed = False, weightdict = {}):
         if matrix != []:
             assert np.allclose(matrix, np.triu(matrix)), "Matrix is not triangular"
             self.matrix = matrix
@@ -26,6 +26,7 @@ class Graph(object):
             self.matrix_to_edgelist()
             self.nodedict = self.matrix_to_nodedict()
             self.nodes = range(self.matrix.shape[0])
+            self.weightdict = 
         elif nodes == []:
             #check duplicates if undirected?
             self.edges = edges
@@ -52,6 +53,7 @@ class Graph(object):
             
     def matrix_to_edgelist(self):
         #Converts the matrix representation to a list of tuples representing the edges.
+        #unnecessary?
         ind = np.nonzero(self.matrix)
         self.edges =  zip(ind[0], ind[1])
 
@@ -63,13 +65,31 @@ class Graph(object):
         return nodedict
     
     def nodedict_to_edgelist(self):
+        self.edges = []
+        for start in self.nodedict.keys():
+            for end in self.nodedict[start]:
+                self.edges.append((start, end))
+        
+    def add_node(self, name, connections):
+        #name can be number, connections as list
+        self.nodedict[node] = connections
+        #update other representations
+        
+    def add_edge(self, fnode, tnode):
+        self.nodedict[fnode].append(tnode)
+        #update other representations
+        
+    def remove_node(self, node):
+        assert node in self.nodes, "Node not in graph"
+        self.nodedict.pop(node, None)
+        #update other representations
+        
+    def remove_edge(self.node):
         0
         
-    def add_edge(self):
-        0
         
     def neighbours(self, node):
-        0
+        return self.nodedict[node]
         
     def find_path(self, start, end, path=[]):
         assert start in self.nodes, "Start is not a node in the graph"
@@ -161,8 +181,7 @@ def create_watts(n = 1, p = 1.):
                 new_edge = (new_edge[1], new_edge[0])
             new_edge_list.append(new_edge)
         else:
-            new_edge_list.append(edge)
-            
+            new_edge_list.append(edge)      
     return  Graph(nnodes = n, edges = new_edge_list)
     
     
