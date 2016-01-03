@@ -5,20 +5,33 @@ import copy
 
 #Create three possibilities to represent graph?
 #TODO: create possibility to give nodes names? or just number-name dict?
+#edgelist with weighted graph possibility
 class Graph(object):
     """
-    Input can be as a matrix, list of edges as tuples, dictionary of connections between nodes
+    Input can be as a matrix, list of edges as tuples,
+    dictionary of connections between nodes.
+    Matrix should be upper triangular for both directed
+    and undirected graphs. Edges without duplicates 
+    (also for directed graph). Nondict with all connections.
     """
     def __init__(self, matrix = [], nnodes = 1, nodes = [], \
-                 edges = [], nodevalues = [], edgevalues = [], nodedict = {}):
+                 edges = [], nodevalues = [], edgevalues = [],\
+                 nodedict = {}, directed = False):
         if matrix != []:
+            assert np.allclose(matrix, np.triu(matrix)), "Matrix is not triangular"
             self.matrix = matrix
+            if not directed:
+                self.matrix = self.matrix + self.matrix.T - np.diag(self.matrix.diagonal())
             self.nnodes = matrix.shape[0]
             self.matrix_to_edgelist()
             self.nodedict = self.matrix_to_nodedict()
-            self.nodes = range(nnodes)
+            self.nodes = range(self.matrix.shape[0])
         elif nodes == []:
+            #check duplicates if undirected?
             self.edges = edges
+            if not directed:
+                backedges = [(end, start) for (start, end) in edges]
+                self.edges.extend(backedges)
             self.nnodes = nnodes
             if edgevalues == []:
                 edgevalues = [1] * len(self.edges)
@@ -26,28 +39,31 @@ class Graph(object):
             self.matrix = np.zeros((nnodes,nnodes))
             self.edgelist_to_matrix()
             self.nodedict = self.matrix_to_nodedict()
-            self.nodes = range(nnodes)
+            self.nodes = range(self.matrix.shape[0])
         if nodedict != {}:
-            0
+            self.nodedict = nodedict
+            self.nodes = range(self.nodedict.keys())
             
     def edgelist_to_matrix(self):
-        #Convert the list of tuples representing edges to a matrix representation of the graph.
+        #Converts the list of tuples representing the edges to a matrix representation of the graph.
         self.matrix = np.zeros((self.nnodes,self.nnodes))
         for edge in self.edges:
             self.matrix[edge[0], edge[1]] = self.edgedict[edge]
             
     def matrix_to_edgelist(self):
+        #Converts the matrix representation to a list of tuples representing the edges.
         ind = np.nonzero(self.matrix)
         self.edges =  zip(ind[0], ind[1])
-        
+
     def matrix_to_nodedict(self):
         nodedict = {}
         for i in range(self.nnodes):
             ind = np.nonzero(self.matrix[i,:])[0].tolist()
-            ind.extend(np.nonzero(self.matrix[:,i])[0].tolist())
             nodedict[i] = ind
         return nodedict
-        
+    
+    def nodedict_to_edgelist(self):
+        0
         
     def add_edge(self):
         0
@@ -119,7 +135,7 @@ def create_erdos(n = 1, p = 1.):
             
     return Graph(matrix = matrix, nnodes = n)
 
-def create_watts(n = 1, p = 0.1):
+def create_watts(n = 1, p = 1.):
     #create list of edges
     #would be an offdiagonal matrix
     init_edge_list = []
