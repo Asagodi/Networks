@@ -55,7 +55,8 @@ class Graph(object):
         #Converts the matrix representation to a list of tuples representing the edges.
         #unnecessary?
         ind = np.nonzero(self.matrix)
-        self.edges =  zip(ind[0], ind[1])
+        fnodes, tnodes = ind[0].astype(int), ind[1].astype(int)
+        self.edges =  zip(fnodes, tnodes)
 
     def matrix_to_nodedict(self):
         nodedict = {}
@@ -155,7 +156,16 @@ class Graph(object):
             for j in self.neighbours(node):
                 if (i, j) in self.edges:
                     c += 1
-        return c/(self.number_of_neighbours(node)*(self.number_of_neighbours(node)-1))
+        try:
+            return c/float(self.number_of_neighbours(node)*(self.number_of_neighbours(node)-1))
+        except:
+            return 0
+    
+    def average_clustering(self):
+        c=0
+        for node in self.nodes:
+            c += self.local_clustering(node)
+        return c/float(len(self.nodes))
   
 
 #Creating different graphs
