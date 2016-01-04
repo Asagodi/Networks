@@ -26,7 +26,7 @@ class Graph(object):
             self.matrix_to_edgelist()
             self.nodedict = self.matrix_to_nodedict()
             self.nodes = range(self.matrix.shape[0])
-            self.weightdict = 
+#             self.weightdict = 
         elif nodes == []:
             #check duplicates if undirected?
             self.edges = edges
@@ -84,7 +84,7 @@ class Graph(object):
         self.nodedict.pop(node, None)
         #update other representations
         
-    def remove_edge(self.node):
+    def remove_edge(self, node):
         0
         
         
@@ -155,34 +155,27 @@ def create_erdos(n = 1, p = 1.):
             
     return Graph(matrix = matrix, nnodes = n)
 
-def create_watts(n = 1, p = 1.):
-    #create list of edges
-    #would be an offdiagonal matrix
-    init_edge_list = []
-    for i in range(n-1):
-        init_edge_list.append((i,i+1))
-    init_edge_list.append((0,n-1))
-    #G = Graph(nnodes = n, edges = init_edge_list)
-    #TG = nx.Graph(G.matrix)
-    #draw(TG, pos=nx.spring_layout(TG))
+def create_watts(n = 1,  k=1, p = 0.):
+    matrix = np.zeros((n,n))
+    for i in range(n):
+        matrix[i,1+i:(i+k/2+1)] = 1
+        matrix[i, (i+n-k/2):n] = 1
+        
+    for i in range(n):
+        for j in range(n):
+            if matrix[i,j] == 1 and random.random() < p:
+                try:
+                    matrix[i,random.choice(i+1+np.nonzero(matrix[i,i+1:] == 0)[0])] = 1
+                    matrix[i,j] = 0
+                except:
+                    0
+                    
+    #also replace edges from other node?
     
-    new_edge_list = []
-    elist = copy.deepcopy(init_edge_list)
-    for edge in init_edge_list:
-        if random.random() < p:
-            new_edge = edge
-            #create new edge until a non-existent is found
-            while new_edge in elist or new_edge in new_edge_list or new_edge == (edge[0], edge[0])\
-            or (new_edge[1], new_edge[0]) in elist or (new_edge[1], new_edge[0]) in new_edge_list:
-                new_edge = (edge[0], random.randint(0, n-1))
-            elist.remove(edge)
-            #set edges (small number, great number)
-            if new_edge[0] > new_edge[1]:
-                new_edge = (new_edge[1], new_edge[0])
-            new_edge_list.append(new_edge)
-        else:
-            new_edge_list.append(edge)      
-    return  Graph(nnodes = n, edges = new_edge_list)
+    #set diagonal and lower triangular entries to zero
+    matrix = np.triu(matrix, 1)
+        
+    return Graph(matrix = matrix)
     
     
     
