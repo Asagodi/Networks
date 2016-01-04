@@ -55,7 +55,8 @@ class Graph(object):
         #Converts the matrix representation to a list of tuples representing the edges.
         #unnecessary?
         ind = np.nonzero(self.matrix)
-        fnodes, tnodes = ind[0].astype(int), ind[1].astype(int)
+        fnodes, tnodes = ind[0].astype(long), ind[1].astype(long)
+#         fnodes, tnodes = ind[0], ind[1]
         self.edges =  zip(fnodes, tnodes)
 
     def matrix_to_nodedict(self):
@@ -95,8 +96,14 @@ class Graph(object):
     def neighbours(self, node):
         return self.nodedict[node]
     
-    def number_of_neighbours(self, node):
+    def degree(self, node):
         return len(self.neighbours(node))
+    
+    def average_degree(self):
+        ad = 0
+        for i in self.nodes:
+            ad += self.degree(i)
+        return ad/float(len(self.nodes))
         
     def find_path(self, start, end, path=[]):
         assert start in self.nodes, "Start is not a node in the graph"
@@ -146,8 +153,9 @@ class Graph(object):
                 shortest = sorted(paths, key=len)[0]
                 shortest_paths.append(shortest)
             except:
-                return "Infinity"
-        diameter = len(shortest_paths[-1])
+                #Raise exception?
+                return float("inf")
+        diameter = len(sorted(shortest_paths, key=len)[-1]) - 1
         return diameter
     
     def local_clustering(self, node):
@@ -157,7 +165,7 @@ class Graph(object):
                 if (i, j) in self.edges:
                     c += 1
         try:
-            return c/float(self.number_of_neighbours(node)*(self.number_of_neighbours(node)-1))
+            return c/float(self.degree(node)*(self.degree(node)-1))
         except:
             return 0
     
@@ -172,10 +180,10 @@ class Graph(object):
 def create_erdos(n = 1, p = 1.):
     # n Number of Nodes, p Choice to get edge
     # only upper triangular entries
-    matrix = np.random.rand(n,n) < p
+    matrix = np.random.rand(n,n) > p
                     
     #set diagonal and lower triangular entries to zero
-    matrix = np.triu(matrix, 1)
+    matrix = np.triu(matrix, 1).astype(int)
             
     return Graph(matrix = matrix, nnodes = n)
 
