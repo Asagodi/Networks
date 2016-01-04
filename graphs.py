@@ -87,9 +87,15 @@ class Graph(object):
     def remove_edge(self, node):
         0
         
+    def number_of_edges(self):
+        return sum(sum(self.matrix))/2
+        
         
     def neighbours(self, node):
         return self.nodedict[node]
+    
+    def number_of_neighbours(self, node):
+        return len(self.neighbours(node))
         
     def find_path(self, start, end, path=[]):
         assert start in self.nodes, "Start is not a node in the graph"
@@ -142,6 +148,14 @@ class Graph(object):
                 return "Infinity"
         diameter = len(shortest_paths[-1])
         return diameter
+    
+    def local_clustering(self, node):
+        c = 0
+        for i in self.neighbours(node):
+            for j in self.neighbours(node):
+                if (i, j) in self.edges:
+                    c += 1
+        return c/(self.number_of_neighbours(node)*(self.number_of_neighbours(node)-1))
   
 
 #Creating different graphs
