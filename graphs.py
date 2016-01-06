@@ -174,13 +174,63 @@ class Graph(object):
         for node in self.nodes:
             c += self.local_clustering(node)
         return c/float(len(self.nodes))
-  
+    
+    def degree_dict(self):
+        dd = {}
+        for node in self.nodes:
+            degree = self.degree(node)
+            if degree in dd.keys():
+                dd[degree] += 1
+            else:
+                dd[degree] = 1
+        return dd
+    
+    def degree_list(self):
+        dl = [0]*self.nnodes
+        for node in self.nodes:
+            dl[self.degree(node)] +=1
+        return dl
+    
+    def SIR(self, time = 1, n_inf = 1, p = 1., sick_time = 5):
+        inf_list = np.zeros((self.nnodes,1))
+        recovered_list = np.zeros((self.nnodes,1)) #these nodes are immune
+        infected_nodes = np.random.choice(range(self.nnodes), size=n_inf, replace=False)
+        inf_list[infected_nodes] = 1
+        inf_time = np.zeros((self.nnodes,1)) #or list?
+        susceptible = [self.nnodes - n_inf]
+        infected = [n_inf]
+        recovered = [0]
+        for t in range(time):
+            #update sickness times
+            inf_time[np.nonzero(inf_list)] += 1
+            #recovery chance
+            recovered_list[np.nonzero(inf_time == sick_time)] = 1
+            inf_list[np.nonzero(inf_time == sick_time)] = 0
+            #update infection vector
+            infvec = self.matrix.dot(inf_list)
+            #print infvec
+            for i,inf_people in enumerate(infvec):
+                sick = False
+                for j in range(inf_people):
+                    if random.random() < p:
+                        sick = True
+                if sick and recovered_list[i] == 0:
+                    inf_list[i] = 1
+                    
+            #update lists
+            num_inf = sum(inf_list)
+            num_rec = sum(recovered_list)
+            susceptible.append(self.nnodes - num_inf - num_rec)
+            infected.append(sum(inf_list))    
+            recovered.append(num_rec)
+            
+        return susceptible, infected, recovered
 
 #Creating different graphs
 def create_erdos(n = 1, p = 1.):
     # n Number of Nodes, p Choice to get edge
     # only upper triangular entries
-    matrix = np.random.rand(n,n) > p
+    matrix = np.random.rand(n,n) < p
                     
     #set diagonal and lower triangular entries to zero
     matrix = np.triu(matrix, 1).astype(int)
