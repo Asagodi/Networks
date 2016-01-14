@@ -61,6 +61,8 @@ class Graph(object):
         if edgevalues == []:
             edgevalues = [1] * len(self.edges)
         self.edgedict = dict(zip(self.edges, edgevalues))
+        
+    #also for edgedict?
 
     def matrix_to_nodedict(self):
         self.nodedict = {}
@@ -172,6 +174,35 @@ class Graph(object):
                     if not shortest or len(newpath) < len(shortest):
                         shortest = newpath
         return shortest
+    
+    def dijkstra_node(self, node):
+        #calculates all distances from node with Dijkstra
+        #what if graph is not connected?
+        dist_dict = dict(zip(self.nodes, [float("infinity")]*self.nnodes))
+        dist_dict[node] = 0
+        current = node
+        unvisited = copy.deepcopy(self.nodes)
+        while unvisited != []:
+            for neighbour in self.neighbours(current): #exclude visited nodes
+                distance = self.edgedict[(current, neighbour)] + dist_dict[current]
+                if distance < dist_dict[neighbour]:
+                    dist_dict[neighbour] = distance
+            poss = [pn for pn, value in dist_dict.items() if value != float("infinity")]
+            if True:
+                #the next node has to have dist_dict value != infinity
+                #and must be in unvisited
+                unvisited.remove(current)
+                poss = [pn for pn, value in dist_dict.items() if value != float("infinity")]
+                next_node = random.choice(list(set(poss) & set(unvisited)))
+                current = next_node
+                if len(unvisited) == 1:
+                    next_node = unvisited[0]
+                    unvisited = []
+                    current = next_node
+            #if nodes that have dist_dict value == infinity
+            #equals unvisited then there are nodes that are not connected
+            #raise UnconnectednessError
+        return dist_dict[max(dist_dict.values())], max(dist_dict.values())
         
     def diameter(self):
         """ calculates the diameter of the graph """
@@ -188,7 +219,39 @@ class Graph(object):
         diameter = len(sorted(shortest_paths, key=len)[-1]) - 1
         return diameter
     
+    def max_dist_node(self, node):
+        #returns the node farthest wawy from node with the distance
+        
+        return 0
+    
+    def fast_diameter(self, max_count = 5):
+        """
+            We are going to try to find the diameter of the connected part of the network.
+           We start with an arbitrary node and find the node that lies furthest away
+           from it. Now we find the node for which the sum of the distances to
+           both nodes is maximal - and, of course, the maximum distance from the
+           second node. We repeat the procedure a few times until the no larger
+           diameter has been found a few times.
+           This yields the diameter of the network with a very high likelyhood and
+           saves a lot of work compared to finding all distances between all nodes.
+        """
+        counter = 0
+        n1 = random.choice(self.nodes)
+        while True:
+            #select a node
+            n2, maxlen = self.dijkstra_node(n1)
+            print "N2", n2, maxlen
+            n3, maxlen3 = self.dijkstra_node(n2)
+            print "N3", n3, maxlen3
+            if n3 == n1:
+                return maxlen
+            counter += 1
+            if counter == max_count:
+                return maxlen
+            n1 = n3
+    
     def local_clustering(self, node):
+        #determines how well the neighbors of a node are connected
         c = 0
         for i in self.neighbours(node):
             for j in self.neighbours(node):
@@ -200,10 +263,15 @@ class Graph(object):
             return 0
     
     def average_clustering(self):
+        #Averages local clustering for all nodes
         c=0
         for node in self.nodes:
             c += self.local_clustering(node)
         return c/float(len(self.nodes))
+    
+    def global_clustering(self):
+        
+        return 0
     
     def degree_dict(self):
         #returns numer of nodes which have a certain degree for each possible degree as a dict
@@ -240,7 +308,8 @@ class Graph(object):
         infected = [n_inf]
         recovered = [0]
         if vis:
-            colorlist = ['r' if i in np.nonzero(inf_list)[0] else 'b' if i in np.nonzero(recovered_list)[0] else 'y' for i in range(self.nnodes)]
+            colorlist = ['r' if i in np.nonzero(inf_list)[0] else 'b' if
+                         i in np.nonzero(recovered_list)[0] else 'y' for i in range(self.nnodes)]
             plt.ion()
             G = nx.Graph(self.matrix)
             pos=nx.spring_layout(G)
@@ -271,7 +340,8 @@ class Graph(object):
                 if sick and recovered_list[i] == 0:
                     inf_list[i] = 1
             if vis:
-                colorlist = ['r' if i in np.nonzero(inf_list)[0] else 'b' if i in np.nonzero(recovered_list)[0] else 'y' for i in range(self.nnodes)]
+                colorlist = ['r' if i in np.nonzero(inf_list)[0] else 'b' 
+                             if i in np.nonzero(recovered_list)[0] else 'y' for i in range(self.nnodes)]
                 nx.draw_networkx_nodes(G,pos,
                                        node_color=colorlist,
                                        node_size=500, alpha=0.8)
@@ -281,6 +351,7 @@ class Graph(object):
 #                 plt.savefig(fig_title)
                 plt.show()
                 sleep(1.)
+                plt.close()
                     
             #update lists
             num_inf = sum(inf_list)
@@ -305,7 +376,7 @@ class Graph(object):
         num_failure = 0
         while self.is_connected() or len(self.nodes) == 1:
            
-            self.remove_node(random.choice(self.nodes))
+            self.remove_node(self.find_node_highest_degree())
             num_failure += 1
         return num_failure
     
