@@ -202,6 +202,7 @@ class Graph(object):
             #if nodes that have dist_dict value == infinity
             #equals unvisited then there are nodes that are not connected
             #raise UnconnectednessError
+        print dist_dict
         return dist_dict[max(dist_dict.values())], max(dist_dict.values())
         
     def diameter(self):
@@ -232,22 +233,24 @@ class Graph(object):
            both nodes is maximal - and, of course, the maximum distance from the
            second node. We repeat the procedure a few times until the no larger
            diameter has been found a few times.
-           This yields the diameter of the network with a very high likelyhood and
+           This yields the diameter of the network with a very high likelihood and
            saves a lot of work compared to finding all distances between all nodes.
         """
         counter = 0
+        maxlen = 0
+        #select a node
         n1 = random.choice(self.nodes)
         while True:
-            #select a node
-            n2, maxlen = self.dijkstra_node(n1)
-            print "N2", n2, maxlen
-            n3, maxlen3 = self.dijkstra_node(n2)
-            print "N3", n3, maxlen3
+            n2, ml2 = self.dijkstra_node(n1)
+            print "N2", n2, ml2
+            n3, ml3 = self.dijkstra_node(n2)
+            print "N3", n3, ml3
             if n3 == n1:
-                return maxlen
-            counter += 1
+                return ml2
+            if ml2 == ml3:
+                counter += 1
             if counter == max_count:
-                return maxlen
+                return ml2
             n1 = n3
     
     def local_clustering(self, node):
@@ -316,7 +319,7 @@ class Graph(object):
             ##         #draw sick nodes red, recovered nodes blue, susceptible nodes yellow 
             nx.draw_networkx_nodes(G,pos,
                            node_color=colorlist,
-                           node_size=500, alpha=0.8)
+                           node_size=50, alpha=0.8)
             nx.draw_networkx_edges(G,pos,width=1.0,alpha=0.5)
             plt.axis('off')
             plt.draw()
@@ -344,7 +347,7 @@ class Graph(object):
                              if i in np.nonzero(recovered_list)[0] else 'y' for i in range(self.nnodes)]
                 nx.draw_networkx_nodes(G,pos,
                                        node_color=colorlist,
-                                       node_size=500, alpha=0.8)
+                                       node_size=50, alpha=0.8)
                 nx.draw_networkx_edges(G,pos,width=1.0,alpha=0.5)
                 plt.axis('off')
                 fig_title = "SIR, time=%d" %t
@@ -352,6 +355,8 @@ class Graph(object):
                 plt.show()
                 sleep(1.)
                 plt.close()
+            
+            
                     
             #update lists
             num_inf = sum(inf_list)
@@ -359,6 +364,10 @@ class Graph(object):
             susceptible.append(self.nnodes - num_inf - num_rec)
             infected.append(sum(inf_list))    
             recovered.append(num_rec)
+            
+            #stop when no infected
+            if np.sum(inf_list) == 0:
+                return susceptible, infected, recovered
         plt.show()
         return susceptible, infected, recovered
     
@@ -374,11 +383,71 @@ class Graph(object):
     
     def attacks(self):
         num_failure = 0
-        while self.is_connected() or len(self.nodes) == 1:
-           
+        while self.is_connected() and len(self.nodes) != 1:
             self.remove_node(self.find_node_highest_degree())
             num_failure += 1
         return num_failure
+    
+    def distribute_weights(self, random = True):
+        #sets weights of edges
+        #TODO: implement weight to give as argument
+        0
+    
+    def neural(self, time, activated = 1, act_threshold = 3, act_time = 2, vis = False):
+        """
+        Simulates neural activity
+        """
+        #initialize activations (randomly)
+        activations = np.zeros((self.nnodes,1))
+        activations[:activated] = 1
+        activations = np.random.permutation(activations)
+#         print activations
+        num_act = [np.sum(activations)]
+        act_times = np.zeros((self.nnodes,1))
+        if vis:
+            colorlist = ['r' if i in np.nonzero(activations)[0] else 'b' for i in range(self.nnodes)]
+            plt.ion()
+            G = nx.Graph(self.matrix)
+            pos=nx.spring_layout(G)
+            ##         #draw sick nodes red, recovered nodes blue, susceptible nodes yellow 
+            nx.draw_networkx_nodes(G,pos,
+                           node_color=colorlist,
+                           node_size=50, alpha=0.8)
+            nx.draw_networkx_edges(G,pos,width=1.0,alpha=0.5)
+            plt.axis('off')
+            plt.draw()
+            sleep(1.)
+        for t in range(time):
+            act_times += 1
+            #Brute Force update
+#             for node in self.nodes:
+#                 act = 0
+#                 for nei in self.neighbours(node):
+#                     if activations[nei] == 1:
+#                         act += self.edgedict[(node, nei)]
+#                 print act, np.exp(-act), random.random()*np.exp(-act_threshold)
+#                 if np.exp(-act) < random.random()*act_threshold:
+#                     activations[node] = 1
+#                     act_times[node] = 0
+#                 activations[act_times >= act_time] = 0
+            act_val = self.matrix.dot(activations)
+            activations[np.exp(-act_val) < random.random()*np.exp(-act_threshold)] = 1
+            act_times[np.exp(-act_val) < random.random()*np.exp(-act_threshold)] = 0            
+            activations[act_times >= act_time] = 0   
+            num_act.append(np.sum(activations))
+            if vis:
+                colorlist = ['r' if i in np.nonzero(activations)[0] else 'b' for i in range(self.nnodes)]
+                nx.draw_networkx_nodes(G,pos,
+                                       node_color=colorlist,
+                                       node_size=50, alpha=0.8)
+                nx.draw_networkx_edges(G,pos,width=1.0,alpha=0.5)
+                plt.axis('off')
+                fig_title = "SIR, time=%d" %t
+#                 plt.savefig(fig_title)
+                plt.show()
+                sleep(1.)
+                plt.close()
+        return num_act
     
     
 
