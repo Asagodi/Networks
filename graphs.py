@@ -374,7 +374,6 @@ class Graph(object):
     def failures(self):
         num_failure = 0
         while self.is_connected() and len(self.nodes) != 1:
-           
             self.remove_node(random.choice(self.nodes))
             num_failure += 1
             print num_failure
@@ -392,10 +391,38 @@ class Graph(object):
         #sets weights of edges
         #TODO: implement weight to give as argument
         0
+        
+    def set_negative_weights(self, fraction = 0.5):
+        i,j = np.nonzero(self.matrix)
+        ix = np.random.choice(len(i), np.floor(fraction * len(i)), replace=False)
+        self.matrix[i[ix], j[ix]] = -1
+        
+    def neural_failure(self, time = 1000, activated = 1, act_threshold = 3, act_time = 2):
+        num_failure = 0
+        for i in range(self.nnodes):
+            num_failure += 1
+            self.remove_node(self.find_node_highest_degree())
+            sact, aact = self.neural(time = time, activated = activated, act_threshold = act_threshold, act_time = act_time)
+            if len(sact) < time:
+                return num_failure
+        return "Did not fail"
+    
+    def neural_attack(self, time = 1000, activated = 1, act_threshold = 3, act_time = 2):
+        num_failure = 0
+        for i in range(self.nnodes):
+            num_failure += 1
+            self.remove_node(random.choice(self.nodes))
+            sact, aact = self.neural(time = time, activated = activated, act_threshold = act_threshold, act_time = act_time)
+            if len(sact) < time:
+                return num_failure
+        return "Did not fail"
+        
     
     def neural(self, time, activated = 1, act_threshold = 3, act_time = 2, vis = False):
         """
         Simulates neural activity
+        Returns the number of neurons activated at one time for each timestep
+        Should return activity of all neurons at each time
         """
         #initialize activations (randomly)
         activations = np.zeros((self.nnodes,1))
@@ -404,6 +431,7 @@ class Graph(object):
 #         print activations
         num_act = [np.sum(activations)]
         act_times = np.zeros((self.nnodes,1))
+        all_act = np.zeros((self.nnodes, time))
         if vis:
             colorlist = ['r' if i in np.nonzero(activations)[0] else 'b' for i in range(self.nnodes)]
             plt.ion()
@@ -431,10 +459,15 @@ class Graph(object):
 #                     act_times[node] = 0
 #                 activations[act_times >= act_time] = 0
             act_val = self.matrix.dot(activations)
-            activations[np.exp(-act_val) < random.random()*np.exp(-act_threshold)] = 1
-            act_times[np.exp(-act_val) < random.random()*np.exp(-act_threshold)] = 0            
+            sact = np.sum(activations)
+            #inhibit when many neurons are active, 
+            #i.e. decrease chance to fire with increasing overall activity
+            activations[np.exp(-act_val)/(1+act_val/(1+sact)) < random.random()*np.exp(-act_threshold)] = 1
+            act_times[np.exp(-act_val)/(1+act_val/(1+sact)) < random.random()*np.exp(-act_threshold)] = 0            
             activations[act_times >= act_time] = 0   
-            num_act.append(np.sum(activations))
+            num_act.append(sact)
+            all_act[:, t] = activations.reshape(self.nnodes)
+            
             if vis:
                 colorlist = ['r' if i in np.nonzero(activations)[0] else 'b' for i in range(self.nnodes)]
                 nx.draw_networkx_nodes(G,pos,
@@ -447,7 +480,10 @@ class Graph(object):
                 plt.show()
                 sleep(1.)
                 plt.close()
-        return num_act
+            
+            if sact == 0:
+                return num_act, all_act
+        return num_act, all_act
     
     
 
