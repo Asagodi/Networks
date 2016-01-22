@@ -97,6 +97,14 @@ class Graph(object):
         self.nodedict[fnode].append(tnode)
         #update other representations
         
+    def remove_fraction_edges(self, fraction):
+        matrix = np.triu(self.matrix, 1)
+        i,j = np.nonzero(matrix)
+        ix = np.random.choice(len(i), np.floor(fraction * len(i)), replace=False)
+        matrix[i[ix], j[ix]] = 0
+        self.matrix = matrix + matrix.T - np.diag(matrix.diagonal())
+        self.update_graph(from_rep = "matrix")
+        
     def remove_node(self, node):
         assert node in self.nodes, "Node not in graph"
         self.matrix[node,:] = 0
@@ -104,8 +112,9 @@ class Graph(object):
         self.nodes.remove(node)
         #update other representations, if only working with nodedict/paths not necessary
         self.update_graph(from_rep = "matrix")
+        
     
-    def remove_edge(self, node):
+    def remove_edge(self, node_i, node_j):
         0
         
     def number_of_edges(self):
@@ -123,6 +132,18 @@ class Graph(object):
         for i in self.nodes:
             ad += self.degree(i)
         return ad/float(len(self.nodes))
+    
+    def list_degrees(self):
+        lsd = []
+        for i in self.nodes:
+            lsd.append(self.degree(i))
+        return lsd
+
+    def degree_matrix(self):
+        dmatrix = np.zeros((self.nnodes, self.nnodes))
+        for i in self.node:
+            dmatrix[i,i] = self.degree(i)
+        return dmatrix
     
     def is_connected(self):
         #checks if there is a connection between all pairs
@@ -204,6 +225,9 @@ class Graph(object):
             #raise UnconnectednessError
         print dist_dict
         return dist_dict[max(dist_dict.values())], max(dist_dict.values())
+    
+    def distance(self, node_i, node_j):
+        return len(self.find_shortest_path(node_i, node_j))
         
     def diameter(self):
         """ calculates the diameter of the graph """
@@ -219,6 +243,17 @@ class Graph(object):
                 return float("inf")
         diameter = len(sorted(shortest_paths, key=len)[-1]) - 1
         return diameter
+    
+    def average_gedesic_distance(self):
+        dist_sum = 0
+        for i in self.nodes:
+            #sufficient to count from node to avoid counting double
+            for j in self.nodes[i+1:]:
+                if i != j:   
+                    # distance(i,j) = distance(j,i) in undirected network
+                    dist_sum += 2*self.distance(i, j)
+                    
+        return dist_sum/(self.nnodes*(self.nnodes-1))
     
     def max_dist_node(self, node):
         #returns the node farthest wawy from node with the distance
@@ -275,6 +310,8 @@ class Graph(object):
     def global_clustering(self):
         
         return 0
+    
+    
     
     def degree_dict(self):
         #returns numer of nodes which have a certain degree for each possible degree as a dict
@@ -397,6 +434,12 @@ class Graph(object):
         ix = np.random.choice(len(i), np.floor(fraction * len(i)), replace=False)
         self.matrix[i[ix], j[ix]] = -1
         
+    def set_negative_nodes(self, fraction = 0.1):
+        self.neg_nodes = np.random.choice(self.nodes, np.floor(fraction*self.nnodes))
+        for n in self.neg_nodes:
+            self.matrix[n,:][np.nonzero(self.matrix[n,:])] = -1
+#             self.matrix[:,n][np.nonzero(self.matrix[:,n])] = -1
+        
     def neural_failure(self, time = 1000, activated = 1, act_threshold = 3, act_time = 2):
         num_failure = 0
         for i in range(self.nnodes):
@@ -485,6 +528,68 @@ class Graph(object):
                 return num_act, all_act
         return num_act, all_act
     
+    def izhikevich(self, time, frac_neg = 0.1, record = 1):
+        #set part of neurons to inhibitory
+        self.set_negative_nodes(fraction = frac_neg)
+        neg_num = np.floor(frac_neg*self.nnodes)
+#         print neg_num, len(self.neg_nodes)
+        
+        #random distributions
+        rall = np.random.rand(self.nnodes,1)
+        re = np.random.rand(self.nnodes-neg_num,1)
+        ri = np.random.rand(neg_num,1)
+        
+        #set up parameters
+        a = 0.02*np.ones((self.nnodes,1))
+        a[self.neg_nodes] = 0.02+0.08*ri
+        
+        b = 0.2*np.ones((self.nnodes,1))
+        b[self.neg_nodes] = 0.25-0.05*ri
+        
+        c =  -65+15*rall**2
+        c[self.neg_nodes] = -65*np.ones((neg_num,1))
+        
+        d = 8-6*rall**2
+        d[self.neg_nodes] = 2*np.ones((neg_num,1))
+        
+        #S=[0.5*rand(Ne+Ni,Ne), -rand(Ne+Ni,Ni)];
+        #should multiply wights with random number?
+        self.matrix = self.matrix * np.random.rand(self.nnodes, self.nnodes)
+        
+        v = -65*np.ones((self.nnodes,1)) # Initial values of v
+        u = b*v                  
+        all_act = np.zeros((self.nnodes, time))                    # spike timings
+                        
+                        
+        recorded_act = np.zeros((record, time))
+        
+        #simulation
+        for t in range(time):
+            #random (sensory) input
+            I=5*np.random.rand(self.nnodes,1)
+            I[self.neg_nodes] = np.random.rand(neg_num,1) # thalamic input
+            
+            fired = np.where(v>=30)[0]
+
+            all_act[fired,t] = 1
+            
+            v[fired]=c[fired]
+            u[fired]=u[fired]+d[fired]
+            
+            try:
+                I = I + np.sum(self.matrix[:,fired],2)
+            except:
+                0
+            
+            v=v+0.5*(0.04*v**2+5*v+140-u+I)  #  step 0.5 ms for numerical stability
+            v=v+0.5*(0.04*v**2+5*v+140-u+I)   
+            u=u+a*(b*v-u)               
+            
+            if record > 0:
+                recorded_act[:, t] = v[:record]
+
+        return all_act, recorded_act
+    
     
 
 #Creating different graphs
@@ -538,3 +643,34 @@ def create_barabasi(n, n_0):
         ind = np.random.choice(nodes, size=n_0, replace=False, p=probs)
         matrix[ind, new] = 1
     return Graph(matrix = matrix)
+
+
+#other functions
+def autocorr(x):
+    result = np.correlate(x, x, mode='full')
+    return result[result.size/2:]
+
+def acf(x, length=5000):
+    return np.array([1]+[np.corrcoef(x[:-i], x[i:])[0,1] for i in range(1, length)])
+
+def variance_matrix(binned_data):
+    r, c =  binned_data.shape
+    varmat = np.zeros((r,r))
+    for i in range(r):
+        vari = np.var(binned_data[i,:])
+        for j in range(r):
+            varmat[i,j] = 1/np.sqrt(vari*np.var(binned_data[j,:]))
+            
+    return varmat
+
+def bin_data(data):
+    time_matrix = np.zeros((302,10))
+    for i in range(10):
+        time_matrix[:,i] = np.sum(data[:,i*500:i*500+500],1)
+    return 
+
+def firing_correlation(data):
+    bd = bin_data(data)
+    vm = variance_matrix(bd)
+    cov = np.cov(bd)
+    return cov*vm
