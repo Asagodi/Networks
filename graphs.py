@@ -461,20 +461,24 @@ class Graph(object):
         return "Did not fail"
         
     
-    def neural(self, time, activated = 1, act_threshold = 3, act_time = 2, vis = False):
+    def neural(self, time, frac_neg = 0.1, activated = 1, act_threshold = 3, act_time = 1, vis = False):
         """
         Simulates neural activity
         Returns the number of neurons activated at one time for each timestep
         Should return activity of all neurons at each time
         """
+        #set some neurons negative
+        self.set_negative_nodes(fraction = frac_neg)
+        neg_num = np.floor(frac_neg*self.nnodes)
+        
         #initialize activations (randomly)
         activations = np.zeros((self.nnodes,1))
         activations[:activated] = 1
         activations = np.random.permutation(activations)
-#         print activations
         num_act = [np.sum(activations)]
         act_times = np.zeros((self.nnodes,1))
         all_act = np.zeros((self.nnodes, time))
+        #print initial active nodes
         if vis:
             colorlist = ['r' if i in np.nonzero(activations)[0] else 'b' for i in range(self.nnodes)]
             plt.ion()
@@ -519,7 +523,7 @@ class Graph(object):
                 nx.draw_networkx_edges(G,pos,width=1.0,alpha=0.5)
                 plt.axis('off')
                 fig_title = "SIR, time=%d" %t
-#                 plt.savefig(fig_title)
+                plt.savefig(fig_title)
                 plt.show()
                 sleep(1.)
                 plt.close()
@@ -659,18 +663,32 @@ def variance_matrix(binned_data):
     for i in range(r):
         vari = np.var(binned_data[i,:])
         for j in range(r):
-            varmat[i,j] = 1/np.sqrt(vari*np.var(binned_data[j,:]))
+            varmat[i,j] = 1./np.sqrt(vari*np.var(binned_data[j,:]))
             
     return varmat
 
-def bin_data(data):
-    time_matrix = np.zeros((302,10))
-    for i in range(10):
-        time_matrix[:,i] = np.sum(data[:,i*500:i*500+500],1)
-    return 
+def bin_data(data, parts = 10):
+    r, c = data.shape
+    time_matrix = np.zeros((r,parts))
+    for i in range(parts):
+        time_matrix[:,i] = np.sum(data[:,i*c/float(parts):i*c/float(parts)+c/float(parts)],1)
+    return time_matrix
 
 def firing_correlation(data):
     bd = bin_data(data)
     vm = variance_matrix(bd)
     cov = np.cov(bd)
-    return cov*vm
+    
+    return np.nan_to_num(cov*vm)
+
+
+# def autocorr(x, t=1):
+#     np.corrcoef(np.array([x[0:len(x)-t], x[t:len(x)]]))
+
+
+def autocorr(x):
+    result = np.correlate(x, x, mode='full')
+    return result[result.size/2:]
+
+def acf(x, length=5000):
+    return np.array([1]+[np.corrcoef(x[:-i], x[i:])[0,1] for i in range(1, length)])
